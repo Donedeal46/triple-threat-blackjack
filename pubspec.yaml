@@ -1,0 +1,109 @@
+name: triple_threat_blackjack
+description: Triple Threat Blackjack — Play 3 hands simultaneously against the dealer.
+publish_to: 'none'
+
+# Version format: major.minor.patch+build
+# Increment build number every time you submit to the store
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.10.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Core UI
+  cupertino_icons: ^1.0.6
+
+  # In-App Purchases (chip store + VIP pass)
+  # Uncomment when ready to activate real payments:
+  # in_app_purchase: ^3.1.13
+
+  # Ads (rewarded + interstitial)
+  # Uncomment when AdMob account is set up:
+  # google_mobile_ads: ^4.0.0
+
+  # Push Notifications
+  # Uncomment when Firebase project is created:
+  # firebase_core: ^2.24.0
+  # firebase_messaging: ^14.7.10
+  # flutter_local_notifications: ^16.3.2
+
+  # Auth (Google + Apple sign-in)
+  # Uncomment when Firebase Auth is set up:
+  # firebase_auth: ^4.15.3
+  # google_sign_in: ^6.2.1
+  # sign_in_with_apple: ^5.0.0
+
+  # Share score button
+  share_plus: ^7.2.2
+
+  # Local storage (save chips, settings, streak)
+  shared_preferences: ^2.2.2
+
+  # URL launcher (Privacy Policy, Terms links)
+  url_launcher: ^6.2.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  # Icon generation (run: flutter pub run flutter_launcher_icons)
+  flutter_launcher_icons: ^0.13.1
+
+# ── App Icon Configuration ────────────────────────────────────
+# After adding your icon PNG, run:
+#   flutter pub run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true 
+  image_path: "assets/icons/app_icon_1024.png"
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/icons/app_icon_1024.png"
+    background_color: "#061A04"
+    theme_color: "#D4AF37"
+  windows:
+    generate: true
+    image_path: "assets/icons/app_icon_1024.png"
+    icon_size: 48
+
+flutter:
+  uses-material-design: true
+
+  # ── Assets ────────────────────────────────────────────────────
+  assets:
+    - assets/icons/
+
+  # ── Fonts (optional — add custom fonts here later) ────────────
+  # fonts:
+  #   - family: CasinoFont
+  #     fonts:
+  #       - asset: assets/fonts/casino.ttf
+
+# ── Android Configuration ─────────────────────────────────────
+# In android/app/build.gradle set:
+#   applicationId "com.issac.triplethreatblackjack"
+#   minSdkVersion 21
+#   targetSdkVersion 34
+#   versionCode 1
+#   versionName "1.0.0"
+#
+# In android/app/src/main/AndroidManifest.xml set:
+#   android:label="Triple Blackjack"
+
+# ── iOS Configuration ──────────────────────────────────────────
+# In ios/Runner/Info.plist set:
+#   CFBundleDisplayName: Triple Blackjack
+#   CFBundleName: Triple Blackjack
+#   CFBundleIdentifier: com.issac.triplethreatblackjack
+#   CFBundleShortVersionString: 1.0.0
+#   CFBundleVersion: 1
+#
+# In ios/Runner.xcodeproj set:
+#   PRODUCT_BUNDLE_IDENTIFIER = com.issac.triplethreatblackjack
+#   PRODUCT_NAME = Triple Blackjack
