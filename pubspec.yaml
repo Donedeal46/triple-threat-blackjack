@@ -1,5 +1,5 @@
 name: triple_threat_blackjack
-description: Triple Threat Blackjack — Play 3 hands simultaneously against the dealer.
+description: Triple Threat Blackjack — Arrange 6 cards across 3 simultaneous blackjack hands.  Patent Pending.
 publish_to: 'none'
 
 # Version format: major.minor.patch+build

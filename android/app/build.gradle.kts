@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.issac.triplethreatblackjack"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 35
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

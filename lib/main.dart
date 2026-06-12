@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   runApp(const BlackjackApp());
 }
@@ -960,9 +960,14 @@ class PlayerStorage {
 }
 
   static int collectPendingBonus() {
-    if (_pendingBonus) { _pendingBonus = false; return 500; }
-    return 0;
-  }
+if (!_pendingBonus) return 0;
+_pendingBonus = false;
+if (_bonusStreak >= 7) return 2000;
+if (_bonusStreak >= 5) return 1500;
+if (_bonusStreak >= 3) return 1000;
+if (_bonusStreak >= 2) return 750;
+return 500;
+}
 
   // ── Leaderboard ──────────────────────────────────────────────
   static List<LeaderboardEntry> getLeaderboard() {
@@ -1483,6 +1488,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     shaderCallback: (b) => const LinearGradient(colors: [Color(0xFFFFE082), Color(0xFFD4AF37)]).createShader(b),
                     child: const Text('TRIPLE THREAT', style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: 5))),
                   const Text('BLACKJACK', style: TextStyle(color: Color(0x80D4AF37), fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 8)),
+                  const SizedBox(height: 4),
+                  const Text('Patent Pending', style: TextStyle(color: Color(0x50D4AF37), fontSize: 9, fontWeight: FontWeight.w500, letterSpacing: 2)),
                   const SizedBox(height: 32),
                   if (_loading) ...[
                     const CircularProgressIndicator(color: Color(0xFFD4AF37)),
@@ -1851,15 +1858,40 @@ class _DailyBonusOverlayState extends State<DailyBonusOverlay> with SingleTicker
                     shaderCallback: (b) => const LinearGradient(
                       colors: [Color(0xFFFFD700), Color(0xFFD4AF37)],
                     ).createShader(b),
-                    child: const Text('+\$500', style: TextStyle(
+                    child: Text('+\$${PlayerStorage.bonusStreak >= 7 ? 2000 : PlayerStorage.bonusStreak >= 5 ? 1500 : PlayerStorage.bonusStreak >= 3 ? 1000 : PlayerStorage.bonusStreak >= 2 ? 750 : 500}', style: TextStyle(
                         color: Colors.white, fontSize: 48, fontWeight: FontWeight.w900)),
                   ),
                   const Text('FREE CHIPS', style: TextStyle(
-                      color: Color(0x80D4AF37), fontSize: 10, letterSpacing: 3)),
-                ]),
-              ),
-              const SizedBox(height: 12),
-              Text('Next bonus in ${_formatCountdown()}',
+color: Color(0x80D4AF37), fontSize: 10, letterSpacing: 3)),
+]),
+),
+const SizedBox(height: 16),
+// 7 gold dots streak indicator
+Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+...List.generate(7, (i) {
+final filled = i < PlayerStorage.bonusStreak;
+return Container(
+margin: const EdgeInsets.symmetric(horizontal: 4),
+width: 28, height: 28,
+decoration: BoxDecoration(
+shape: BoxShape.circle,
+color: filled ? const Color(0xFFD4AF37) : const Color(0x20D4AF37),
+border: Border.all(
+color: filled ? const Color(0xFFFFD700) : const Color(0x40D4AF37),
+width: 2),
+boxShadow: filled ? [const BoxShadow(
+color: Color(0x80D4AF37), blurRadius: 8)] : [],
+),
+child: filled ? const Icon(Icons.local_fire_department,
+color: Colors.black, size: 14) : null,
+);
+}),
+]),
+const SizedBox(height: 4),
+Text('${PlayerStorage.bonusStreak}/7 day streak',
+style: const TextStyle(color: Color(0x80D4AF37), fontSize: 9, letterSpacing: 1)),
+const SizedBox(height: 12),
+Text('Next bonus in ${_formatCountdown()}',
                   style: const TextStyle(color: Color(0x60FFFFFF), fontSize: 10, letterSpacing: 1)),
               const SizedBox(height: 24),
 
@@ -1966,7 +1998,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               const SizedBox(height: 4),
               const Text('ARRANGE YOUR DESTINY', style: TextStyle(color: Color(0x80D4AF37), fontSize: 11, letterSpacing: 4)),
               const SizedBox(height: 48),
-              Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.center, children: [
+                Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.center, children: [
                 Container(width: 40, height: 1, color: const Color(0x60D4AF37)),
                 const SizedBox(width: 10),
                 suitWidget('S', const Color(0x70FFFFFF), 24),
@@ -2007,7 +2039,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               const SizedBox(height: 16),
               const Text('\$1,000 FREE CHIPS TO START', style: TextStyle(color: Color(0x70D4AF37), fontSize: 9, letterSpacing: 3, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
-              const Text('Triple Threat Blackjack  •  7 Decks  •  Split  •  Insurance • Soft 17', style: TextStyle(color: Color(0x40FFFFFF), fontSize: 8, letterSpacing: 1)),
+              const Center(child: Text('Triple Threat Blackjack™  •  Patent Pending  •  v1.0.0', style: TextStyle(color: Colors.white24, fontSize: 9))),
             ]),
           ))),
           // Daily bonus overlay
@@ -2414,41 +2446,104 @@ class _AnimCardState extends State<AnimCard> with SingleTickerProviderStateMixin
 class SideOdds { final String name; final int pays; const SideOdds(this.name, this.pays); }
 const List<SideOdds> sideOddsList = [
   SideOdds('All Six Aces',500000),SideOdds('6-Card Str. Flush',50000),SideOdds('Six of a Kind',40000),
-  SideOdds('Five of a Kind',500),SideOdds('6-Card Flush',200),SideOdds('6-Card Straight',150),
-  SideOdds('5-Card Full House',100),SideOdds('5-Card Flush',50),SideOdds('5-Card Straight',35),
-  SideOdds('3x BJ Setup',300),SideOdds('Two Sets of Trips',250),SideOdds('All Six Tens',75),
-  SideOdds('Four of a Kind',15),SideOdds('Three Pairs',12),SideOdds('All Six Low (A-6)',6),
+  SideOdds('Five of a Kind',500),SideOdds('3x BJ Setup',300),SideOdds('Two Sets of Trips',250),
+  SideOdds('6-Card Flush',200), SideOdds('6-Card Straight',150),SideOdds('Full House',50),
+  SideOdds('All Six Tens',40),SideOdds('5-Card Flush',25),SideOdds('5-Card Straight',20),
+  SideOdds('Three Pairs',12),SideOdds('All Six Low (A-6)',6),
 ];
 bool _isStraight(List<int> rn) {
-  final s=[...rn]..sort(); bool ok=true;
-  for(int i=1;i<s.length;i++){if(s[i]!=s[i-1]+1){ok=false;break;}} if(ok)return true;
-  if(s[0]==0){final s2=[...s.skip(1),13]..sort();bool ok2=true;
-  for(int i=1;i<s2.length;i++){if(s2[i]!=s2[i-1]+1){ok2=false;break;}}if(ok2)return true;}return false;}
-bool _any5(List<PlayingCard> cards,bool Function(List<PlayingCard>)test){
-  for(int skip=0;skip<cards.length;skip++){final sub=[for(int i=0;i<cards.length;i++)if(i!=skip)cards[i]];if(test(sub))return true;}return false;}
+final s=[...rn.toSet()]..sort();
+if(s.length!=rn.length)return false;
+// Normal straight
+bool ok=true;
+for(int i=1;i<s.length;i++){if(s[i]!=s[i-1]+1){ok=false;break;}}
+if(ok)return true;
+// Ace-high straight (A=0, treat as 13)
+if(s[0]==0){
+final s2=[...s.skip(1),13]..sort();
+bool ok2=true;
+for(int i=1;i<s2.length;i++){if(s2[i]!=s2[i-1]+1){ok2=false;break;}}
+if(ok2)return true;
+}
+return false;
+}
+
+bool _isFlush(List<PlayingCard> cards){
+final s=cards[0].suit;
+return cards.every((c)=>c.suit==s);
+}
+
+bool _isStraightCards(List<PlayingCard> cards){
+const vals=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+final rn=cards.map((c)=>vals.indexOf(c.value)).toList();
+return _isStraight(rn);
+}
+
+bool _isFullHouse(List<PlayingCard> cards){
+final m=<String,int>{};
+for(final c in cards)m[c.value]=(m[c.value]??0)+1;
+final v=m.values.toList()..sort((a,b)=>b.compareTo(a));
+return v.length==2&&v[0]==3&&v[1]==2;
+}
+
+bool _any5(List<PlayingCard> cards, bool Function(List<PlayingCard>) test){
+for(int skip=0;skip<cards.length;skip++){
+final sub=[for(int i=0;i<cards.length;i++)if(i!=skip)cards[i]];
+if(test(sub))return true;
+}
+return false;
+}
+
 SideOdds? evalSideBet(List<PlayingCard> cards) {
-  if(cards.length<6)return null;
-  const vals=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-  final ranks=cards.map((c)=>c.value).toList();final suits=cards.map((c)=>c.suit).toList();
-  final rn=ranks.map((r)=>vals.indexOf(r)).toList();
-  final rc=<String,int>{};for(final r in ranks)rc[r]=(rc[r]??0)+1;
-  final counts=rc.values.toList()..sort((a,b)=>b.compareTo(a));
-  final allSameSuit6=suits.every((s)=>s==suits[0]);final isStraight6=_isStraight(rn);
-  final allA=ranks.every((r)=>r=='A');final allT=ranks.every((r)=>['10','J','Q','K'].contains(r));
-  final allL=ranks.every((r)=>['A','2','3','4','5','6'].contains(r));
-  final aC=ranks.where((r)=>r=='A').length;final tC=ranks.where((r)=>['10','J','Q','K'].contains(r)).length;
-  if(allA)return sideOddsList[0];if(isStraight6&&allSameSuit6)return sideOddsList[1];
-  if(counts[0]==6)return sideOddsList[2];if(counts[0]==5)return sideOddsList[3];
-  if(allSameSuit6)return sideOddsList[4];if(isStraight6)return sideOddsList[5];
-  if(_any5(cards,(sub){final m=<String,int>{};for(final c in sub)m[c.value]=(m[c.value]??0)+1;
-  final v=m.values.toList()..sort((a,b)=>b.compareTo(a));return v.length>=2&&v[0]==3&&v[1]==2;}))return sideOddsList[6];
-  if(_any5(cards,(sub){final s0=sub[0].suit;return sub.every((c)=>c.suit==s0);}))return sideOddsList[7];
-  if(_any5(cards,(sub)=>_isStraight(sub.map((c)=>vals.indexOf(c.value)).toList())))return sideOddsList[8];
-  if(aC==3&&tC==3)return sideOddsList[9];
-  if(counts.length>1&&counts[0]==3&&counts[1]==3)return sideOddsList[10];
-  if(allT)return sideOddsList[11];if(counts[0]==4)return sideOddsList[12];
-  if(counts.length>=3&&counts[0]==2&&counts[1]==2&&counts[2]==2)return sideOddsList[13];
-  if(allL)return sideOddsList[14];return null;}
+if(cards.length<6)return null;
+const vals=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+final ranks=cards.map((c)=>c.value).toList();
+
+// Rank counts
+final rc=<String,int>{};
+for(final r in ranks)rc[r]=(rc[r]??0)+1;
+final counts=rc.values.toList()..sort((a,b)=>b.compareTo(a));
+
+// Suit counts
+final sc=<String,int>{};
+for(final c in cards)sc[c.suit]=(sc[c.suit]??0)+1;
+final isFlush6=sc.length==1;
+final isStraight6=_isStraightCards(cards);
+
+// All Six Aces
+if(counts[0]==6&&ranks[0]=='A')return sideOddsList[0];
+// 6-Card Straight Flush
+if(isStraight6&&isFlush6)return sideOddsList[1];
+// Six of a Kind
+if(counts[0]==6)return sideOddsList[2];
+// Five of a Kind
+if(counts[0]==5)return sideOddsList[3];
+// 3x BJ Setup
+final aC=ranks.where((r)=>r=='A').length;
+final tC=ranks.where((r)=>['10','J','Q','K'].contains(r)).length;
+if(aC==3&&tC==3)return sideOddsList[4];
+// Two Sets of Trips
+if(counts.length>=2&&counts[0]==3&&counts[1]==3)return sideOddsList[5];
+// 6-Card Flush
+if(isFlush6)return sideOddsList[6];
+// 6-Card Straight
+if(isStraight6)return sideOddsList[7];
+// All Six Tens
+if(ranks.every((r)=>['10','J','Q','K'].contains(r)))return sideOddsList[9];
+// Three Pairs
+if(counts.length==3&&counts[0]==2&&counts[1]==2&&counts[2]==2)return sideOddsList[12];
+// 5-Card Straight Flush (any 5)
+if(_any5(cards,(sub)=>_isStraightCards(sub)&&_isFlush(sub)))return sideOddsList[1];
+// 5-Card Flush (any 5)
+if(_any5(cards,(sub)=>_isFlush(sub)))return sideOddsList[10];
+// Full House (any 5)
+if(_any5(cards,(sub)=>_isFullHouse(sub)))return sideOddsList[8];
+// 5-Card Straight (any 5)
+if(_any5(cards,(sub)=>_isStraightCards(sub)))return sideOddsList[11];
+// All Six Low A-6
+if(ranks.every((r)=>['A','2','3','4','5','6'].contains(r)))return sideOddsList[13];
+return null;
+}
 
 enum Phase { bet, dealing, arrange, play, dealerTurn, result }
 
@@ -2472,7 +2567,7 @@ class _GameScreenState extends State<GameScreen> {
   List<List<List<PlayingCard>>> hands = [[], [], []];
   List<List<int>> handBets = [[], [], []];
   int activeSlot = 0, activeSubHand = 0;
-  int balance = 0, bet = 25, sideBet = 0, winStreak = 0;
+  int balance = 0, bet = 0, sideBet = 0, winStreak = 0;
   int _totalRounds = 0, _totalWins = 0, _totalLosses = 0, _totalPushes = 0;
   int _biggestWin = 0, _bestStreak = 0, _totalWagered = 0, _totalProfit = 0;
   List<bool> doubleUsed = [false, false, false];
@@ -2484,7 +2579,8 @@ class _GameScreenState extends State<GameScreen> {
   int insuranceBet = 0;
   String message = '';
   int selChip = 25, usedCardCount = 0;
-  int _lastBet = 0, _lastMainBet = 0;
+  List<PlayingCard> _shoe = [];
+  int _lastBet = 0, _lastMainBet = 0, _lastSideBet = 0;
   bool _betOnMain = true, _bettingOnSide = false;
   Timer? msgTimer;
   Set<String> animCards = {};
@@ -2516,9 +2612,16 @@ class _GameScreenState extends State<GameScreen> {
     _bestStreak = PlayerStorage.statBestStreak;
     _totalWagered = PlayerStorage.statWagered;
     _totalProfit = PlayerStorage.statProfit;
+    _initShoe();
   }
 
-  bool get hideHole => phase == Phase.dealing || phase == Phase.arrange || phase == Phase.play;
+  void _initShoe() {
+_shoe = createDeck();
+_shoe = _shoe.sublist(35);
+setState(() => usedCardCount = 0);
+}
+
+bool get hideHole => phase == Phase.dealing || phase == Phase.arrange || phase == Phase.play;
 
   void showMsg(String msg) {
     setState(() => message = msg);
@@ -2543,12 +2646,15 @@ class _GameScreenState extends State<GameScreen> {
     final total = bet * 3 + sideBet;
     if (balance < total) { showMsg('Not enough chips! Adjust your bet.'); return; }
     if (bet < 1) { showMsg('Place a bet first!'); return; }
-    final d = createDeck();
-    final rp = d.sublist(0, 6);
-    rp.sort((a, b) => _cardSortKey(b).compareTo(_cardSortKey(a)));
-    final dc = d.sublist(6, 8);
-    setState(() {
-      pool6 = rp; dealer = dc; deck = d.sublist(8);
+    if (_shoe.length < 52) { _initShoe(); setState(() => usedCardCount = 0); }
+final rp = _shoe.sublist(0, 6);
+_shoe = _shoe.sublist(6);
+rp.sort((a, b) => _cardSortKey(b).compareTo(_cardSortKey(a)));
+final dc = _shoe.sublist(0, 2);
+_shoe = _shoe.sublist(2);
+setState(() {
+pool6 = rp; dealer = dc; deck = _shoe;
+
       hands = [[], [], []]; handBets = [[bet], [bet], [bet]];
       activeSlot = 0; activeSubHand = 0;
       doubleUsed = [false, false, false];
@@ -2604,13 +2710,13 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void confirmArrange() {
-    if (hands.any((h) => h.isEmpty || h[0].length != 2)) { showMsg('Each hand needs 2 cards!'); return; }
-    if (sideBet > 0) {
-      final all6 = [...hands[0][0], ...hands[1][0], ...hands[2][0]];
-      final sw = evalSideBet(all6); setState(() => sideWin = sw);
-      if (sw != null) showMsg('SIDE BET HIT: ${sw.name} ${sw.pays}:1!');
-    }
+if (hands.any((h) => h.isEmpty || h[0].length != 2)) { showMsg('Each hand needs 2 cards!'); return; }
+if (sideBet > 0) {
+    final all6 = [...hands[0][0], ...hands[1][0], ...hands[2][0]];
+final sw = evalSideBet(all6); setState(() => sideWin = sw);
+}   
     setState(() { phase = Phase.play; activeSlot = 0; activeSubHand = 0; });
+    Future.delayed(const Duration(milliseconds: 100), _checkFor21);
     if (dealer.isNotEmpty && dealer[0].value == 'A') {
       setState(() => offeringInsurance = true);
       showMsg('Dealer shows Ace — Insurance?');
@@ -2619,17 +2725,38 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
-  void takeInsurance() {
+  void _checkFor21() {
+if (handValue(currentHand) >= 21) {
+Future.delayed(const Duration(milliseconds: 600), advanceHand);
+}
+}
+
+void takeInsurance() {
     final cost = (bet * 3) ~/ 2;
     if (balance < cost) { showMsg('Not enough for insurance!'); return; }
     setState(() { tookInsurance = true; insuranceBet = cost; balance -= cost; offeringInsurance = false; });
-    showMsg('Insurance taken');
-  }
+showMsg('Insurance taken');
+Future.delayed(const Duration(milliseconds: 800), () {
+if (mounted) _checkDealerBlackjack();
+});
+}
 
   void declineInsurance() {
-    setState(() => offeringInsurance = false);
-    showMsg('Hand 1 — make your move');
-  }
+setState(() => offeringInsurance = false);
+_checkDealerBlackjack();
+}
+
+void _checkDealerBlackjack() {
+if (dealer.length >= 2 && handValue(dealer) == 21) {
+// Dealer has blackjack — reveal and finish immediately
+setState(() => phase = Phase.dealerTurn);
+Future.delayed(const Duration(milliseconds: 600), () {
+if (mounted) finishRound(dealer);
+});
+} else {
+showMsg('Hand 1 — make your move');
+}
+}
 
   List<PlayingCard> get currentHand => hands[activeSlot][activeSubHand];
 
@@ -2638,7 +2765,7 @@ class _GameScreenState extends State<GameScreen> {
     final c = deck.first;
     SoundEngine.deal();
     setState(() { deck = deck.sublist(1); hands[activeSlot][activeSubHand] = [...currentHand, c]; animCards.add(c.id); });
-    if (handValue(currentHand) >= 21) advanceHand();
+    if (handValue(currentHand) >= 21) Future.delayed(const Duration(milliseconds: 600), advanceHand);
   }
 
   void doStand() => advanceHand();
@@ -2695,6 +2822,7 @@ class _GameScreenState extends State<GameScreen> {
       if (hands[s].isNotEmpty) {
         setState(() { activeSlot = s; activeSubHand = 0; });
         showMsg('Hand ${s + 1} — make your move');
+        Future.delayed(const Duration(milliseconds: 100), _checkFor21);
         return;
       }
     }
@@ -2747,10 +2875,12 @@ class _GameScreenState extends State<GameScreen> {
     setState(() {
       results = res; profit = roundProfit; balance += pay; dealer = dc; phase = Phase.result;
       usedCardCount += dealer.length + hands.fold(0, (s, h) => s + h.fold(0, (a, c) => a + c.length));
+      _shoe = deck;
       if (wins > 0) { winStreak++; if (winStreak > _bestStreak) _bestStreak = winStreak; }
       else winStreak = 0;
       _lastBet = bet;
       _lastMainBet = bet;
+      _lastSideBet = sideBet;
       _totalRounds++;
       _totalWins += wins;
       _totalLosses += losses;
@@ -2866,24 +2996,34 @@ class _GameScreenState extends State<GameScreen> {
       bestStreak: _bestStreak,
       biggestWin: _biggestWin,
     );
-    if (wins == 3) { SoundEngine.tripleWin(); showMsg('TRIPLE WIN! BONUS!'); }
-    else if (wins == 2) { SoundEngine.win(); showMsg('DOUBLE WIN!'); }
-    else if (wins == 0) { SoundEngine.lose(); showMsg('Dealer wins.'); }
-    else { SoundEngine.win(); showMsg('Won $wins hand${wins > 1 ? "s" : ""}!'); }
+    final _msgSeed = DateTime.now().millisecond;
+const _tripleMsgs = ['TRIPLE WIN! BONUS!','ALL THREE! UNSTOPPABLE!','TRIPLE THREAT ACTIVATED!','CLEAN SWEEP! BONUS PAID!','ALL HANDS WIN! LEGEND!'];
+const _doubleMsgs = ['DOUBLE WIN!','TWO FOR THREE!','DOUBLE UP!','TWO HANDS WIN!','NICE DOUBLE!'];
+const _lossMsgs = ['Dealer wins.','House takes it.','Better luck next hand.','Dealer wins this one.','The house always wins... sometimes.'];
+const _singleMsgs = ['Won a hand!','One hand wins!','Keep it going!','One down, more to come!','Single hand win!'];
+if (wins == 3) { SoundEngine.tripleWin(); showMsg(_tripleMsgs[_msgSeed % _tripleMsgs.length]); }
+else if (wins == 2) { SoundEngine.win(); showMsg(_doubleMsgs[_msgSeed % _doubleMsgs.length]); }
+else if (wins == 0) { SoundEngine.lose(); showMsg(_lossMsgs[_msgSeed % _lossMsgs.length]); }
+else { SoundEngine.win(); showMsg(_singleMsgs[_msgSeed % _singleMsgs.length]); }
     if (sideWin != null) SoundEngine.sideBetHit();
   }
 
   void newRound() {
-    setState(() {
-      phase = Phase.bet; pool6 = []; hands = [[], [], []]; dealer = [];
-      results = [[], [], []]; profit = null; sideWin = null;
-      message = ''; nextHand = 0; sideBet = 0; animCards = {};
-      // Auto-correct bet if balance can't cover it
-      if (bet * 3 > balance) bet = (balance ~/ 3).clamp(1, balance);
-      handBets = [[bet], [bet], [bet]]; doubleUsed = [false, false, false];
-      offeringInsurance = false; tookInsurance = false; insuranceBet = 0;
-    });
-  }
+setState(() {
+phase = Phase.bet; pool6 = []; hands = [[], [], []]; dealer = [];
+results = [[], [], []]; profit = null; sideWin = null;
+message = ''; nextHand = 0; animCards = {};
+// Restore last bets
+bet = _lastMainBet > 0 ? _lastMainBet : 0;
+sideBet = _lastSideBet > 0 ? _lastSideBet : 0;
+// Auto-correct if balance can't cover it
+if (bet * 3 + sideBet > balance) {
+bet = 0; sideBet = 0;
+}
+handBets = [[bet], [bet], [bet]]; doubleUsed = [false, false, false];
+offeringInsurance = false; tookInsurance = false; insuranceBet = 0;
+});
+}
 
   void _showMenuOverlay() {
     showDialog(
@@ -2925,12 +3065,18 @@ class _GameScreenState extends State<GameScreen> {
             }),
             const SizedBox(height: 12),
             _menuBtn(Icons.military_tech, 'BADGES', () {
-              Navigator.pop(ctx);
-              Navigator.of(context).push(MaterialPageRoute(
-                builder: (BuildContext _) => const BadgesScreen()));
-            }),
-            const SizedBox(height: 12),
-            _menuBtn(Icons.timer, 'TOURNAMENT', () {
+Navigator.pop(ctx);
+Navigator.of(context).push(MaterialPageRoute(
+builder: (BuildContext _) => const BadgesScreen()));
+}),
+const SizedBox(height: 12),
+_menuBtn(Icons.diamond, 'VIP STATUS', () {
+Navigator.pop(ctx);
+Navigator.of(context).push(MaterialPageRoute(
+builder: (BuildContext _) => const VipScreen()));
+}),
+const SizedBox(height: 12),
+_menuBtn(Icons.timer, 'TOURNAMENT', () {
               Navigator.pop(ctx);
               Navigator.of(context).push(MaterialPageRoute(
                 builder: (BuildContext _) => TournamentLobbyScreen(
@@ -3074,17 +3220,12 @@ const SizedBox(height: 12),
         _usedPile(),
         const SizedBox(width: 8),
         if (winStreak >= 2) Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [Color(0xFFFF6B00), Color(0xFFFF9500)]),
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: const [BoxShadow(color: Color(0x80FF6B00), blurRadius: 8)]),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            const Text('🔥', style: TextStyle(fontSize: 12)),
-            const SizedBox(width: 3),
-            Text('$winStreak 🔥', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900)),
-          ])),
-        const SizedBox(width: 12),
+padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+decoration: BoxDecoration(
+gradient: const LinearGradient(colors: [Color(0xFFFF6B00), Color(0xFFFF9500)]),
+borderRadius: BorderRadius.circular(8)),
+child: Text('🔥$winStreak', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900))),
+const SizedBox(width: 6),
         GestureDetector(
           onTap: () => _showMenuOverlay(),
           child: Container(
@@ -3094,7 +3235,7 @@ const SizedBox(height: 12),
             child: const Text('MENU', style: TextStyle(color: Color(0xAAD4AF37), fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 1)),
           ),
         ),
-        const Spacer(),
+        
         // Level + VIP + XP bar
         Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
           Row(mainAxisSize: MainAxisSize.min, children: [
@@ -3113,7 +3254,7 @@ const SizedBox(height: 12),
                 style: const TextStyle(fontSize: 12)),
           ]),
           const SizedBox(height: 3),
-          SizedBox(width: 110, height: 4,
+          SizedBox(width: 90, height: 4,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(2),
               child: LinearProgressIndicator(
@@ -3126,10 +3267,10 @@ const SizedBox(height: 12),
           Text('${PlayerStorage.xp} XP', style: const TextStyle(
               color: Color(0x60FFFFFF), fontSize: 7, letterSpacing: 1)),
         ]),
-        const Spacer(),
-          Text(fmtMoney(balance), style: TextStyle(
+        
+          FittedBox(fit: BoxFit.scaleDown, child: Text(fmtMoney(balance), style: TextStyle(
               color: balance < 100 ? const Color(0xFFEF5350) : balance < 300 ? const Color(0xFFFFC107) : Colors.white,
-              fontSize: balance >= 100000 ? 14 : balance >= 10000 ? 17 : 22, fontWeight: FontWeight.w900)),
+              fontSize: balance >= 100000 ? 14 : balance >= 10000 ? 17 : 22, fontWeight: FontWeight.w900))),
           if (balance < 300) GestureDetector(
             onTap: () => setState(() => showChipStore = true),
             child: Container(
@@ -3139,20 +3280,7 @@ const SizedBox(height: 12),
                   borderRadius: BorderRadius.circular(6)),
               child: Text(balance < 100 ? '⚠ DANGER -ADD CHIPS NOW' : 'ADD CHIPS',
                   style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.w800, letterSpacing: 1)))),
-        const Spacer(),
-        GestureDetector(
-          onTap: () => setState(() => showOdds = true),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: const Color(0xCC0A2010),
-                borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xAAD4AF37))),
-            child: Column(children: [
-              const Text('SIDE BET', style: TextStyle(color: Color(0xFFD4AF37), fontSize: 7, fontWeight: FontWeight.w800, letterSpacing: 1)),
-              Text(sideBet > 0 ? fmtMoney(sideBet) : '\$0',
-                  style: TextStyle(color: sideBet > 0 ? const Color(0xFFFFD700) : Colors.white54, fontSize: 16, fontWeight: FontWeight.w900)),
-            ]),
-          ),
-        ),
+        
       ]),
     );
   }
@@ -3244,8 +3372,11 @@ const SizedBox(height: 12),
         if (phase != Phase.bet)
           Row(mainAxisAlignment: MainAxisAlignment.center,
             children: dealer.asMap().entries.map((e) =>
-              Padding(padding: const EdgeInsets.symmetric(horizontal: 5),
-                child: SizedBox(width: 54, height: 76, child: _anim(e.value, fd: e.key == 1 && hideHole, w: 54, h: 76)))).toList()),
+              Padding(padding: EdgeInsets.symmetric(horizontal: dealer.length >= 5 ? 2 : 5),
+child: SizedBox(width: dealer.length >= 5 ? 36 : dealer.length >= 4 ? 44 : 54, height: dealer.length >= 5 ? 50 : dealer.length >= 4 ? 62 : 76,
+child: _anim(e.value, fd: e.key == 1 && hideHole,
+w: dealer.length >= 5 ? 36 : dealer.length >= 4 ? 44 : 54,
+h: dealer.length >= 5 ? 50 : dealer.length >= 4 ? 62 : 76)))).toList()),
         const SizedBox(height: 2),
         if ((phase == Phase.result || phase == Phase.dealerTurn) && dealer.isNotEmpty)
           _valBadge(dv > 21 ? 'BUST' : '$dv', bust: dv > 21),
@@ -3282,18 +3413,17 @@ const SizedBox(height: 12),
             final isActSub = isActive && activeSubHand == sub;
             final badge = valueBadge(h);
             final isSplit = subHands.length > 1;
-            final cw = isSplit ? 36.0 : 44.0;
-            final ch = isSplit ? 52.0 : 62.0;
+            final cw = isSplit ? 26.0 : 34.0;
+            final ch = isSplit ? 36.0 : 48.0;
             return Container(
               margin: EdgeInsets.symmetric(vertical: isSplit ? 0 : 1),
               decoration: BoxDecoration(borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: isActSub ? const Color(0xFFFFD700) : Colors.transparent, width: 2)),
               child: Column(children: [
-                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Wrap(alignment: WrapAlignment.center, spacing: 2, runSpacing: 2, children: [
                   ...h.asMap().entries.map((ce) => GestureDetector(
                     onTap: () => recall(slot, ce.key),
-                    child: Padding(padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: SizedBox(width: cw, height: ch, child: _anim(ce.value, w: cw, h: ch))))),
+                    child: SizedBox(width: cw, height: ch, child: _anim(ce.value, w: cw, h: ch)))),
                   if (phase == Phase.arrange || phase == Phase.dealing)
                     ...List.generate(2 - h.length, (_) => Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -3340,14 +3470,14 @@ const SizedBox(height: 12),
     );
   }
 
-  Widget _ghost() => Container(width: 44, height: 62,
-    decoration: BoxDecoration(borderRadius: BorderRadius.circular(7),
-        border: Border.all(color: const Color(0x70D4AF37), width: 1.5), color: const Color(0x08D4AF37)),
-    child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      suitWidget('D', const Color(0x25D4AF37), 16),
-      const SizedBox(height: 3),
-      const Text('TAP', style: TextStyle(color: Color(0x40D4AF37), fontSize: 7, fontWeight: FontWeight.w700, letterSpacing: 1)),
-    ])));
+  Widget _ghost() => Container(width: 32, height: 46,
+decoration: BoxDecoration(borderRadius: BorderRadius.circular(7),
+border: Border.all(color: const Color(0x70D4AF37), width: 1.5), color: const Color(0x08D4AF37)),
+child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+suitWidget('D', const Color(0x25D4AF37), 12),
+const SizedBox(height: 2),
+const Text('TAP', style: TextStyle(color: Color(0x40D4AF37), fontSize: 6, fontWeight: FontWeight.w700, letterSpacing: 1)),
+])));
 
   Widget _valBadge(String text, {bool bust = false}) {
     Color bg = const Color(0xAA000000); Color border = const Color(0x50FFFFFF);
@@ -3394,7 +3524,7 @@ const SizedBox(height: 12),
             const SizedBox(width: 12),
             const Text('Dealer drawing...', style: TextStyle(color: Color(0xFFD4AF37), fontSize: 18, fontWeight: FontWeight.w700)),
           ]))),
-        if (phase == Phase.result) _resultPhase(),
+        if (phase == Phase.result) const SizedBox.shrink(),
       ]),
     );
   }
@@ -3431,27 +3561,12 @@ const SizedBox(height: 12),
                 fontSize: 17, fontWeight: FontWeight.w900)),
           ]))),
       const Spacer(),
-      if (_lastMainBet > 0)
-        GestureDetector(
-          onTap: _applyLastBet,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-            margin: const EdgeInsets.only(right: 6),
-            decoration: BoxDecoration(color: const Color(0x20FFFFFF),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0x40FFFFFF))),
-            child: Column(children: [
-              const Text('LAST', style: TextStyle(color: Colors.white54,
-                  fontSize: 6, fontWeight: FontWeight.w700, letterSpacing: 1)),
-              Text(fmtMoney(_lastMainBet * 3), style: const TextStyle(
-                  color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w800)),
-            ]))),
       _dealButton(),
-      const SizedBox(width: 6),
+      const SizedBox(width: 4),
       GestureDetector(
         onTap: () => setState(() => showChipStore = true),
         child: Container(
-          height: 46, width: 42,
+          height: 46, width: 38,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
                 colors: [Color(0xFF1565C0), Color(0xFF0D47A1)]),
@@ -3519,7 +3634,7 @@ const SizedBox(height: 12),
           if (_bettingOnSide) sideBet = 0; else bet = 0;
         }),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
           decoration: BoxDecoration(color: const Color(0x40000000),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: const Color(0x40FFFFFF))),
@@ -3564,14 +3679,14 @@ const SizedBox(height: 12),
   Widget _arrangePhase() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
-        Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(color: const Color(0xFFD4AF37), borderRadius: BorderRadius.circular(8)),
-          child: Text('H${nextHand + 1}', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 13))),
-        const SizedBox(width: 10),
-        const Text('Tap card to place  |  Tap placed card to recall', style: TextStyle(color: Color(0xAAFFFFFF), fontSize: 10)),
+          child: Text('H${nextHand + 1}', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 12))),
+        const SizedBox(width: 6),
+        const Text('Tap to place  |  Tap to recall', style: TextStyle(color: Color(0xAAFFFFFF), fontSize: 9)),
         const Spacer(),
         GestureDetector(onTap: confirmArrange,
-          child: Container(width: 120, height: 44,
+          child: Container(width: 88, height: 44,
             decoration: BoxDecoration(
               gradient: const LinearGradient(colors: [Color(0xFF43A047), Color(0xFF1B5E20)],
                   begin: Alignment.topCenter, end: Alignment.bottomCenter),
@@ -3586,12 +3701,11 @@ const SizedBox(height: 12),
           child: Padding(padding: const EdgeInsets.only(right: 8),
             child: SizedBox(width: 60, height: 84, child: _anim(c, w: 60, h: 84))))),
         if (pool6.isEmpty) Center(child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Text('✓', style: TextStyle(color: Color(0xFF4CAF50), fontSize: 28)),
-            const Text('ALL PLACED', style: TextStyle(color: Color(0xFFFFD700), fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: 2)),
-            const Text('tap CONFIRM to play', style: TextStyle(color: Color(0x80FFFFFF), fontSize: 9)),
-          ]))),
+padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+child: Column(mainAxisSize: MainAxisSize.min, children: [
+const Text('✓', style: TextStyle(color: Color(0xFF4CAF50), fontSize: 18)),
+const Text('ALL PLACED', style: TextStyle(color: Color(0xFFFFD700), fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2)),
+]))),
       ])),
     ]);
   }
@@ -3631,7 +3745,9 @@ const SizedBox(height: 12),
           child: Text('$hv', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 22))),
       ]),
       const SizedBox(height: 10),
-      if (splitFromAces[activeSlot])
+      if (handValue(currentHand) >=21)
+        const SizedBox.shrink()
+      else if (splitFromAces[activeSlot])
         Row(children: [Expanded(child: _actionTab('STAND', const Color(0xFFB71C1C), doStand))])
       else
         Row(children: [
@@ -4525,8 +4641,8 @@ class _ResultOverlayState extends State<_ResultOverlay>
               child: FadeTransition(opacity: _fade,
                 child: ScaleTransition(scale: _scale,
                   child: Container(
-                    width: 360,
-                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    width: double.infinity,
+                    margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(colors: _gradColors,
                           begin: Alignment.topCenter, end: Alignment.bottomCenter),
@@ -4920,9 +5036,30 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 color: Color(0x50FFFFFF), fontSize: 10)),
           ],
         ]))
-      : ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          itemCount: entries.length,
+      : Column(children: [
+Container(
+margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+decoration: BoxDecoration(
+gradient: const LinearGradient(colors: [Color(0x25D4AF37), Color(0x10D4AF37)]),
+borderRadius: BorderRadius.circular(12),
+border: Border.all(color: const Color(0x60D4AF37))),
+child: Row(children: [
+const Text('🌍', style: TextStyle(fontSize: 16)),
+const SizedBox(width: 8),
+const Text('YOUR GLOBAL RANK', style: TextStyle(
+color: Color(0xFFD4AF37), fontSize: 9,
+fontWeight: FontWeight.w700, letterSpacing: 2)),
+const Spacer(),
+Text('#${entries.indexWhere((e) => e.name == _myName) >= 0 ? entries.indexWhere((e) => e.name == _myName) + 1 : entries.length + 1} / ${1247 + (DateTime.now().millisecondsSinceEpoch ~/ 86400000 % 500)} players',
+style: const TextStyle(
+color: Colors.white, fontSize: 13,
+fontWeight: FontWeight.w900)),
+]),
+),
+Expanded(child: ListView.builder(
+padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+itemCount: entries.length,
           itemBuilder: (BuildContext ctx, int i) {
             final e = entries[i];
             final isMe = e.name == _myName;
@@ -5015,7 +5152,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
               ]),
             );
           },
-        );
+        )),
+      ]);
   }
 }
 
@@ -5580,6 +5718,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
   late int _playerBalance;
   bool _ended = false;
   bool _showStandings = false;
+  bool _earlyExit = false;
   late List<AiPlayer> _aiPlayers;
   final Random _rng = Random();
 
@@ -5645,9 +5784,9 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
         config: widget.config,
         playerFinalBalance: _playerBalance,
         aiPlayers: _aiPlayers,
+        earlyExit: _earlyExit,
         onDone: (int prize) {
-          widget.onComplete(widget.playerBalance + prize);
-          Navigator.of(context).pop();
+          widget.onComplete(widget.playerBalance + prize);          
         },
       ),
     ));
@@ -5792,6 +5931,7 @@ class _TournamentGameScreenState extends State<TournamentGameScreen> {
                       TextButton(
                           onPressed: () {
                             Navigator.pop(ctx);
+                            _earlyExit = true;
                             _endTournament();
                           },
                           child: const Text('END NOW',
@@ -6017,9 +6157,11 @@ class TournamentFinalScreen extends StatefulWidget {
   final int playerFinalBalance;
   final List<AiPlayer> aiPlayers;
   final Function(int) onDone;
+  final bool earlyExit;
   const TournamentFinalScreen({super.key,
       required this.config, required this.playerFinalBalance,
-      required this.aiPlayers, required this.onDone});
+      required this.aiPlayers, required this.onDone,
+      this.earlyExit = false});
   @override State<TournamentFinalScreen> createState() =>
       _TournamentFinalScreenState();
 }
@@ -6076,7 +6218,8 @@ class _TournamentFinalScreenState extends State<TournamentFinalScreen>
         (b['balance'] as int).compareTo(a['balance'] as int));
     _playerRank =
         _results.indexWhere((e) => e['isPlayer'] == true) + 1;
-    _prize = _playerRank == 1 ? widget.config.prize1st
+    _prize = widget.earlyExit ? widget.config.participationPrize
+        : _playerRank == 1 ? widget.config.prize1st
         : _playerRank == 2 ? widget.config.prize2nd
         : _playerRank == 3 ? widget.config.prize3rd
         : widget.config.participationPrize;
@@ -6112,8 +6255,7 @@ class _TournamentFinalScreenState extends State<TournamentFinalScreen>
         child: Stack(children: [
           Positioned.fill(child: CustomPaint(painter: FeltPainter())),
           SafeArea(child: FadeTransition(opacity: _fade,
-            child: ScaleTransition(scale: _scale,
-              child: Column(children: [
+                child: Column(children: [
                 const SizedBox(height: 12),
                 Text(widget.config.emoji,
                     style: const TextStyle(fontSize: 36)),
@@ -6221,7 +6363,7 @@ class _TournamentFinalScreenState extends State<TournamentFinalScreen>
                   ]),
                 ),
                 const SizedBox(height: 4),
-                SizedBox(height: 300, child: ListView.builder(
+                SizedBox(height: 220, child: ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: _results.length,
                   itemBuilder: (BuildContext ctx, int i) {
@@ -6354,33 +6496,30 @@ class _TournamentFinalScreenState extends State<TournamentFinalScreen>
                 )),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: InkWell(
-                    onTap: () => widget.onDone(_prize),
-                    child: Container(
-                      width: double.infinity, height: 50,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFFE55C),
-                              Color(0xFFD4AF37), Color(0xFFA07800)],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter),
-                        borderRadius: BorderRadius.circular(25),
-                        boxShadow: const [BoxShadow(
-                            color: Color(0xAAD4AF37),
-                            blurRadius: 16,
-                            offset: Offset(0, 4))]),
-                      child: Center(child: Text(
-                          'CLAIM +${fmtMoney(_prize)}',
-                          style: const TextStyle(
-                              color: Colors.black,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 2))),
-                    ),
-                  ),
+                  child: SizedBox(
+width: double.infinity, height: 50,
+child: ElevatedButton(
+onPressed: ()  {
+                   widget.onDone(_prize);
+                   Navigator.of(context).popUntil((route) => route.isFirst);
+                 },
+style: ElevatedButton.styleFrom(
+backgroundColor: const Color(0xFFD4AF37),
+shape: RoundedRectangleBorder(
+borderRadius: BorderRadius.circular(25)),
+elevation: 8),
+child: Text(
+'CLAIM +${fmtMoney(_prize)}',
+style: const TextStyle(
+color: Colors.black,
+fontSize: 15,
+fontWeight: FontWeight.w900,
+letterSpacing: 2)),
+),
+                ),
                 ),
               ]),
-            ),
+            
           )),
         ]),
       ),
@@ -7551,7 +7690,7 @@ class _HowToPlayScreenState extends State<HowToPlayScreen> {
       _section('🃏', 'BLACKJACK',
         'An Ace + any 10-value card on your starting 2 cards = Blackjack. Pays 1:1 — the arrangement advantage is your reward.'),
       _section('✂️', 'SPLIT',
-        'If your 2 cards have the same value, you can Split into 2 separate hands. Each gets an additional card. Split Aces auto-stand.'),
+        'If your 2 cards are the same regardless of suit, you can Split into 2 separate hands. Each gets an additional card. Split Aces auto-stand.'),
       _section('⬆️', 'DOUBLE DOWN',
         'Double your bet and receive exactly one more card. Only available on your initial 2 cards (no split hands).'),
       _section('🛡️', 'INSURANCE',
@@ -7726,7 +7865,7 @@ class _LegalScreenState extends State<LegalScreen> {
       'Triple Threat Blackjack is intended for users 17 and older. We do not knowingly collect data from children under 13.'),
     _section('Data Security',
       'Your game data is stored locally on your device and is not transmitted to external servers.'),
-    _section('Contact Us', 'Questions? Email us at:\nsupport@triplethreatblackjack.com'),
+    _section('Contact Us', 'Questions? Email us at:\ntriplethreatblackjack@gmail.com'),
   ]);
 
   Widget _termsContent() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -7748,6 +7887,6 @@ class _LegalScreenState extends State<LegalScreen> {
       'The App is provided "as is" without warranties. We do not guarantee it will be error-free or uninterrupted.'),
     _section('Limitation of Liability',
       'To the fullest extent permitted by law, the developer is not liable for indirect or consequential damages from use of the App.'),
-    _section('Contact', 'Questions? Email us at:\nsupport@triplethreatblackjack.com'),
+    _section('Contact', 'Questions? Email us at:\ntriplethreatblackjack@gmail.com'),
   ]);
 }
